@@ -38,8 +38,8 @@ dpkg-buildpackage -us -uc -b
 Installing the package registers the source with DKMS for RISC-V kernels. It
 does not configure any module to load automatically.
 
-CI builds the native Debian source and binary packages, validates the DKMS
-payload, and uploads them as workflow artifacts. Pushes to
-`master` also publish through `deb-s3` when the repository has the same
-`DEB_S3_*`, AWS, and signing variables and secrets as the kernel package
-repository.
+CI builds the native source package and validates its binary output in an
+isolated `sbuild` environment. The `master` workflow only uploads build
+artifacts. The `latest-recipe` workflow signs and publishes through `deb-s3`
+when the repository has the same `DEB_S3_*`, AWS, and signing variables and
+secrets as the kernel package repository.

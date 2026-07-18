@@ -1,0 +1,121 @@
+name: latest-recipe-publish
+
+on:
+  push:
+    branches:
+      - latest-recipe
+  workflow_dispatch:
+
+concurrency:
+  group: latest-recipe-publish
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  build-and-publish:
+    runs-on: ubuntu-latest
+    env:
+      DEBIAN_FRONTEND: noninteractive
+      SBUILD_MIRROR: http://deb.debian.org/debian
+      SBUILD_SUITE: trixie
+      DEB_S3_BUCKET: ${{ vars.DEB_S3_BUCKET }}
+      DEB_S3_PREFIX: ${{ vars.DEB_S3_PREFIX }}
+      DEB_S3_CODENAME: ${{ vars.DEB_S3_CODENAME }}
+      DEB_S3_COMPONENT: ${{ vars.DEB_S3_COMPONENT }}
+      DEB_S3_REGION: ${{ vars.DEB_S3_REGION }}
+      DEB_S3_ENDPOINT: ${{ vars.DEB_S3_ENDPOINT }}
+      DEB_S3_FORCE_PATH_STYLE: ${{ vars.DEB_S3_FORCE_PATH_STYLE }}
+      DEB_S3_SIGN_KEY: ${{ vars.DEB_S3_SIGN_KEY }}
+      DEB_S3_CLEAN: ${{ vars.DEB_S3_CLEAN }}
+      DEB_S3_ORIGIN: ${{ vars.DEB_S3_ORIGIN }}
+      DEB_S3_SUITE: ${{ vars.DEB_S3_SUITE }}
+      DEB_S3_PRESERVE_VERSIONS: ${{ vars.DEB_S3_PRESERVE_VERSIONS }}
+      DEB_S3_LOCK: ${{ vars.DEB_S3_LOCK }}
+      DEB_S3_FAIL_IF_EXISTS: ${{ vars.DEB_S3_FAIL_IF_EXISTS }}
+      DEB_S3_VISIBILITY: ${{ vars.DEB_S3_VISIBILITY }}
+      DEB_REPO_SIGNING_PRIVATE_KEY: ${{ secrets.DEB_REPO_SIGNING_PRIVATE_KEY }}
+      DEB_REPO_SIGNING_PASSPHRASE: ${{ secrets.DEB_REPO_SIGNING_PASSPHRASE }}
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      AWS_SESSION_TOKEN: ${{ secrets.AWS_SESSION_TOKEN }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install host tooling
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            curl \
+            debootstrap \
+            devscripts \
+            gnupg \
+            mmdebstrap \
+            ruby \
+            sbuild
+          sudo gem install --no-document deb-s3
+
+      - name: Enable user namespaces for unshare builds
+        run: |
+          current_user="$(id -un)"
+          alloc_subid() {
+            local file="$1"
+            awk -F: 'BEGIN { max = 100000 } NF >= 3 { end = $2 + $3; if (end > max) max = end } END { print max + 65536 }' "$file"
+          }
+          if ! getsubids "$current_user" >/dev/null 2>&1; then
+            next_subuid="$(alloc_subid /etc/subuid)"
+            echo "${current_user}:${next_subuid}:65536" | sudo tee -a /etc/subuid
+          fi
+          if ! getsubids -g "$current_user" >/dev/null 2>&1; then
+            next_subgid="$(alloc_subid /etc/subgid)"
+            echo "${current_user}:${next_subgid}:65536" | sudo tee -a /etc/subgid
+          fi
+          if [ -e /proc/sys/kernel/unprivileged_userns_clone ]; then
+            sudo sysctl -w kernel.unprivileged_userns_clone=1
+          fi
+
+      - name: Build source package
+        id: source
+        run: |
+          ./ci/build-source-package.sh \
+            --workspace "$GITHUB_WORKSPACE" \
+            --output-file "$GITHUB_OUTPUT"
+
+      - name: Build in sbuild
+        id: sbuild
+        run: |
+          ./ci/run-sbuild.sh \
+            --workspace "$GITHUB_WORKSPACE" \
+            --dsc "${{ steps.source.outputs.dsc }}" \
+            --artifact-dir "${RUNNER_TEMP}/artifacts" \
+            --output-file "$GITHUB_OUTPUT"
+
+      - name: Validate DKMS package
+        run: |
+          ./ci/validate-package.sh \
+            --artifact-dir "${{ steps.sbuild.outputs.artifact_dir }}"
+
+      - name: Prepare repository signing key
+        if: ${{ env.DEB_REPO_SIGNING_PRIVATE_KEY != '' }}
+        run: |
+          ./ci/setup-repo-signing.sh \
+            --env-file "$GITHUB_ENV" \
+            --home "${RUNNER_TEMP}/deb-repo-signing" \
+            --public-key-dir "${{ steps.sbuild.outputs.artifact_dir }}/repository-signing-key"
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: latest-recipe-${{ github.sha }}
+          path: ${{ steps.sbuild.outputs.artifact_dir }}/
+          if-no-files-found: error
+
+      - name: Publish to deb-s3
+        if: ${{ env.DEB_S3_BUCKET != '' && env.AWS_ACCESS_KEY_ID != '' && env.AWS_SECRET_ACCESS_KEY != '' }}
+        run: |
+          ./ci/publish-deb-s3.sh \
+            --artifact-dir "${{ steps.sbuild.outputs.artifact_dir }}"
+
