@@ -1,3 +1,10 @@
+cv181x-camera-dkms (0.1.3) unstable; urgency=medium
+
+  * Attach the capture device to its reserved DMA memory pool.
+  * Invoke Kbuild directly from DKMS builds.
+
+ -- Sodo <sodo@example.com>  Sun, 19 Jul 2026 00:00:00 +0900
+
 cv181x-camera-dkms (0.1.2) unstable; urgency=medium
 
   * Rename the camera subsystem coordinator module to cv181x-vip.

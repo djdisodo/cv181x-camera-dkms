@@ -15,6 +15,7 @@
 #include <linux/mutex.h>
 #include <linux/of.h>
 #include <linux/of_graph.h>
+#include <linux/of_reserved_mem.h>
 #include <linux/platform_device.h>
 #include <linux/pm_runtime.h>
 #include <linux/property.h>
@@ -559,6 +560,11 @@ static void cv181x_csi_cleanup_video(struct cv181x_camera_dev *csi)
 	vb2_queue_release(&csi->queue);
 }
 
+static void cv181x_csi_release_reserved_mem(void *data)
+{
+	of_reserved_mem_device_release(data);
+}
+
 static int cv181x_csi_probe(struct platform_device *pdev)
 {
 	static const char * const reset_names[] = {
@@ -582,6 +588,16 @@ static int cv181x_csi_probe(struct platform_device *pdev)
 	mutex_init(&csi->lock);
 	spin_lock_init(&csi->qlock);
 	INIT_LIST_HEAD(&csi->queued);
+
+	ret = of_reserved_mem_device_init(dev);
+	if (ret && ret != -ENODEV)
+		return dev_err_probe(dev, ret, "failed to attach DMA pool\n");
+	if (!ret) {
+		ret = devm_add_action_or_reset(dev,
+					       cv181x_csi_release_reserved_mem, dev);
+		if (ret)
+			return ret;
+	}
 
 	csi->csi_mac = devm_platform_ioremap_resource_byname(pdev, "csi-mac");
 	if (IS_ERR(csi->csi_mac))

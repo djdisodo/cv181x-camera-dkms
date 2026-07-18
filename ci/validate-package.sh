@@ -39,4 +39,6 @@ bash -n "$installed_dkms_conf"
 if grep -q '#MODULE_VERSION#' "$installed_dkms_conf"; then
 	die "DKMS package version placeholder was not replaced"
 fi
-
+if ! grep -Eq '^MAKE\[[0-9]+\]="make -C \$\{kernel_source_dir\} M=' "$installed_dkms_conf"; then
+	die "DKMS build does not invoke Kbuild directly"
+fi
