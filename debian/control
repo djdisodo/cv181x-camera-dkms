@@ -1,0 +1,17 @@
+Source: cv181x-camera-dkms
+Section: kernel
+Priority: optional
+Maintainer: Packaging Maintainer <maintainer@example.com>
+Build-Depends:
+ debhelper-compat (= 13),
+ dh-sequence-dkms
+Standards-Version: 4.7.0
+Rules-Requires-Root: no
+
+Package: cv181x-camera-dkms
+Architecture: all
+Depends:
+ ${misc:Depends}
+Description: DKMS modules for the Sophgo CV181x camera subsystem
+ Builds the CV181x camera common, CSI-2 receiver, video-input bridge, ISP
+ bypass frontend, and V4L2 capture modules for each installed kernel.

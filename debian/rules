@@ -1,0 +1,27 @@
+#!/usr/bin/make -f
+
+include /usr/share/dpkg/pkg-info.mk
+
+DKMS_SOURCE := debian/cv181x-camera-dkms/usr/src/cv181x-camera-$(DEB_VERSION_UPSTREAM)
+
+%:
+	dh $@ --with dkms
+
+override_dh_auto_build:
+	:
+
+override_dh_auto_clean:
+	rm -rf .tmp_versions
+	rm -f *.o *.ko *.mod *.mod.c .*.cmd Module.symvers modules.order
+
+override_dh_auto_install:
+	install -d "$(DKMS_SOURCE)"
+	install -m0644 Makefile \
+		cv181x-camera-common.c \
+		cv181x-core.c \
+		cv181x-csi2.c \
+		cv181x-vi.c \
+		cv181x-isp.c \
+		cv181x-camera.h \
+		cv181x-components.h \
+		"$(DKMS_SOURCE)/"

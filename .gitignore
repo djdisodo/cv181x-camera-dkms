@@ -1,0 +1,13 @@
+*.o
+*.ko
+*.mod
+*.mod.c
+*.order
+*.symvers
+.*.cmd
+.tmp_versions/
+debian/.debhelper/
+debian/debhelper-build-stamp
+debian/files
+debian/*.substvars
+debian/cv181x-camera-dkms/
