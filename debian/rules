@@ -18,7 +18,7 @@ override_dh_auto_install:
 	install -d "$(DKMS_SOURCE)"
 	install -m0644 Makefile \
 		cv181x-camera-common.c \
-		cv181x-core.c \
+		cv181x-vip.c \
 		cv181x-csi2.c \
 		cv181x-vi.c \
 		cv181x-isp.c \

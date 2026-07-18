@@ -10,7 +10,8 @@ The DKMS package builds five modules from one source package:
 - `cv181x-csi2.ko`: CSI-2 receiver and D-PHY wrapper
 - `cv181x-vi.ko`: CSI bridge and capture DMA support
 - `cv181x-isp.ko`: ISP-top support required by bypass capture
-- `cv181x-camera.ko`: media graph, asynchronous binding, and VB2 orchestration
+- `cv181x-vip.ko`: video-input pipeline coordination, media graph,
+  asynchronous binding, and VB2 orchestration
 
 Build against a prepared kernel tree:
 

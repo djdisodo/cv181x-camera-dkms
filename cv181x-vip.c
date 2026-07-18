@@ -31,7 +31,7 @@
 
 #include "cv181x-camera.h"
 
-#define CV181X_CAMERA_DRIVER_NAME	"cv181x-camera"
+#define CV181X_VIP_DRIVER_NAME		"cv181x-vip"
 #define CV181X_CSI_MIN_QUEUED_BUFS	2
 #define CV181X_CSI_DEFAULT_AXI_RATE	396000000
 
@@ -279,7 +279,7 @@ static const struct vb2_ops cv181x_csi_vb2_ops = {
 static int cv181x_csi_querycap(struct file *file, void *priv,
 			       struct v4l2_capability *cap)
 {
-	strscpy(cap->driver, CV181X_CAMERA_DRIVER_NAME, sizeof(cap->driver));
+	strscpy(cap->driver, CV181X_VIP_DRIVER_NAME, sizeof(cap->driver));
 	strscpy(cap->card, "Sophgo CV181x camera", sizeof(cap->card));
 
 	return 0;
@@ -758,6 +758,7 @@ static void cv181x_csi_remove(struct platform_device *pdev)
 }
 
 static const struct of_device_id cv181x_csi_of_match[] = {
+	{ .compatible = "sophgo,cv181x-vip" },
 	{ .compatible = "sophgo,sg2002-csi" },
 	{ .compatible = "sophgo,cv181x-csi" },
 	{ .compatible = "sophgo,cv181x-csi2" },
@@ -770,12 +771,12 @@ static struct platform_driver cv181x_csi_driver = {
 	.probe = cv181x_csi_probe,
 	.remove = cv181x_csi_remove,
 	.driver = {
-		.name = CV181X_CAMERA_DRIVER_NAME,
+		.name = CV181X_VIP_DRIVER_NAME,
 		.of_match_table = cv181x_csi_of_match,
 	},
 };
 module_platform_driver(cv181x_csi_driver);
 
-MODULE_DESCRIPTION("Sophgo CV181x camera subsystem driver");
+MODULE_DESCRIPTION("Sophgo CV181x video input pipeline driver");
 MODULE_AUTHOR("Sodo");
 MODULE_LICENSE("GPL");

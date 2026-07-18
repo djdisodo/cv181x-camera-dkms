@@ -5,8 +5,7 @@ obj-m := cv181x-camera-common.o
 obj-m += cv181x-csi2.o
 obj-m += cv181x-vi.o
 obj-m += cv181x-isp.o
-obj-m += cv181x-camera.o
-cv181x-camera-y := cv181x-core.o
+obj-m += cv181x-vip.o
 else
 KDIR ?= /lib/modules/$(shell uname -r)/build
 
