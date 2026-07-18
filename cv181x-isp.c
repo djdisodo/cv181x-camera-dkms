@@ -69,6 +69,9 @@ void cv181x_isp_stop(struct cv181x_camera_dev *cam)
 {
 	cv181x_isp_update_bits(cam->vi, CV181X_ISPTOP_INT_EVENT0_EN,
 			       CV181X_ISPTOP_FRAME_DONE_FE0_CH0, 0);
+	cv181x_isp_update_bits(cam->vi, CV181X_PRE_RAW_FE0_FRAME_VLD,
+			       CV181X_PRE_RAW_FE_FRAME_VLD_CH0 |
+			       CV181X_PRE_RAW_FE_PQ_VLD_CH0, 0);
 	writel(U32_MAX, cam->vi + CV181X_ISPTOP_INT_EVENT0);
 }
 EXPORT_SYMBOL_GPL(cv181x_isp_stop);

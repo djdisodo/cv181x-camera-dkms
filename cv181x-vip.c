@@ -97,13 +97,13 @@ static void cv181x_csi_complete_active(struct cv181x_camera_dev *csi,
 	}
 	spin_unlock_irqrestore(&csi->qlock, flags);
 
-	if (done)
-		vb2_buffer_done(&done->vb.vb2_buf, state);
-
 	if (arm) {
 		cv181x_vi_dma_set_addr(csi, addr);
 		cv181x_isp_trigger(csi);
 	}
+
+	if (done)
+		vb2_buffer_done(&done->vb.vb2_buf, state);
 }
 
 static int cv181x_csi_hw_start(struct cv181x_camera_dev *csi)
@@ -111,6 +111,7 @@ static int cv181x_csi_hw_start(struct cv181x_camera_dev *csi)
 	struct cv181x_buffer *buf;
 	dma_addr_t addr;
 	unsigned long flags;
+	int ret;
 
 	if (csi->irq <= 0)
 		return dev_err_probe(csi->dev, -ENXIO, "missing ISP IRQ\n");
@@ -118,6 +119,16 @@ static int cv181x_csi_hw_start(struct cv181x_camera_dev *csi)
 	if (!csi->source)
 		return dev_err_probe(csi->dev, -ENOLINK,
 				     "missing CSI source subdevice\n");
+
+	ret = reset_control_bulk_assert(CV181X_CSI2_NUM_RESETS, csi->resets);
+	if (ret)
+		return dev_err_probe(csi->dev, ret,
+				     "failed to assert camera resets\n");
+	udelay(5);
+	ret = reset_control_bulk_deassert(CV181X_CSI2_NUM_RESETS, csi->resets);
+	if (ret)
+		return dev_err_probe(csi->dev, ret,
+				     "failed to deassert camera resets\n");
 
 	spin_lock_irqsave(&csi->qlock, flags);
 	csi->active = cv181x_csi_next_buffer_locked(csi);
@@ -260,9 +271,9 @@ static void cv181x_csi_stop_streaming(struct vb2_queue *q)
 	struct cv181x_camera_dev *csi = vb2_get_drv_priv(q);
 
 	WRITE_ONCE(csi->streaming, false);
-	cv181x_csi_hw_stop(csi);
 	v4l2_subdev_disable_streams(&csi->csi2_subdev,
 				    CV181X_CSI2_PAD_SOURCE, BIT(0));
+	cv181x_csi_hw_stop(csi);
 
 	video_device_pipeline_stop(&csi->vdev);
 	pm_runtime_put(csi->dev);
