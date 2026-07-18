@@ -1,3 +1,9 @@
+cv181x-camera-dkms (0.1.1) unstable; urgency=medium
+
+  * Add CI validation and optional Debian repository publication.
+
+ -- Packaging Maintainer <maintainer@example.com>  Sat, 18 Jul 2026 22:05:00 +0900
+
 cv181x-camera-dkms (0.1.0) unstable; urgency=medium
 
   * Initial DKMS packaging for the CV181x camera subsystem.
