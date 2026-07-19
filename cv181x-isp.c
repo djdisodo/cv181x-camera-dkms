@@ -1,20 +1,24 @@
 // SPDX-License-Identifier: GPL-2.0-only
 /* Minimal Sophgo CV181x ISP frontend support for bypass capture */
 
+#include <linux/delay.h>
 #include <linux/io.h>
 #include <linux/module.h>
 
 #include "cv181x-camera.h"
 
 #define CV181X_PRE_RAW_FE0_FRAME_VLD	0x00028
+#define CV181X_VIP_SYS_RESET		0x00000
 #define CV181X_ISPTOP_BASE		0x70000
 #define CV181X_ISPTOP_INT_EVENT0	(CV181X_ISPTOP_BASE + 0x00)
 #define CV181X_ISPTOP_INT_EVENT0_EN	(CV181X_ISPTOP_BASE + 0x10)
 #define CV181X_ISPTOP_SW_CTRL0		(CV181X_ISPTOP_BASE + 0x20)
 #define CV181X_ISPTOP_SW_CTRL1		(CV181X_ISPTOP_BASE + 0x24)
 #define CV181X_ISPTOP_SCENARIOS_CTRL	(CV181X_ISPTOP_BASE + 0x30)
+#define CV181X_ISPTOP_SW_RESET		(CV181X_ISPTOP_BASE + 0x34)
 
 #define CV181X_ISPTOP_FRAME_DONE_FE0_CH0	BIT(0)
+#define CV181X_VIP_SYS_RESET_ISP		(BIT(1) | BIT(17))
 #define CV181X_PRE_RAW_FE_FRAME_VLD_CH0		BIT(0)
 #define CV181X_PRE_RAW_FE_PQ_VLD_CH0		BIT(4)
 #define CV181X_ISPTOP_SW0_SHAW_UP_FE0		BIT(16)
@@ -37,6 +41,23 @@ static void cv181x_isp_update_bits(void __iomem *base, u32 offset,
 	reg |= value & mask;
 	writel(reg, base + offset);
 }
+
+void cv181x_isp_reset(struct cv181x_camera_dev *cam)
+{
+	cv181x_isp_update_bits(cam->vip_sys, CV181X_VIP_SYS_RESET,
+			       CV181X_VIP_SYS_RESET_ISP,
+			       CV181X_VIP_SYS_RESET_ISP);
+	udelay(20);
+	cv181x_isp_update_bits(cam->vip_sys, CV181X_VIP_SYS_RESET,
+			       CV181X_VIP_SYS_RESET_ISP, 0);
+
+	/* AXI reset must bracket the remaining ISP block resets. */
+	writel(BIT(6), cam->vi + CV181X_ISPTOP_SW_RESET);
+	writel(GENMASK(9, 0) & ~BIT(7), cam->vi + CV181X_ISPTOP_SW_RESET);
+	writel(BIT(6), cam->vi + CV181X_ISPTOP_SW_RESET);
+	writel(0, cam->vi + CV181X_ISPTOP_SW_RESET);
+}
+EXPORT_SYMBOL_GPL(cv181x_isp_reset);
 
 void cv181x_isp_start(struct cv181x_camera_dev *cam)
 {

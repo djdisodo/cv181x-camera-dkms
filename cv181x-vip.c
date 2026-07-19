@@ -120,12 +120,15 @@ static int cv181x_csi_hw_start(struct cv181x_camera_dev *csi)
 		return dev_err_probe(csi->dev, -ENOLINK,
 				     "missing CSI source subdevice\n");
 
-	ret = reset_control_bulk_assert(CV181X_CSI2_NUM_RESETS, csi->resets);
+	/* VIPSYS is shared with the video codec; reset only camera children. */
+	ret = reset_control_bulk_assert(CV181X_CSI2_NUM_RESETS - 1,
+					&csi->resets[CV181X_CSI2_RST_CAM0]);
 	if (ret)
 		return dev_err_probe(csi->dev, ret,
 				     "failed to assert camera resets\n");
 	udelay(5);
-	ret = reset_control_bulk_deassert(CV181X_CSI2_NUM_RESETS, csi->resets);
+	ret = reset_control_bulk_deassert(CV181X_CSI2_NUM_RESETS - 1,
+					  &csi->resets[CV181X_CSI2_RST_CAM0]);
 	if (ret)
 		return dev_err_probe(csi->dev, ret,
 				     "failed to deassert camera resets\n");
@@ -139,6 +142,7 @@ static int cv181x_csi_hw_start(struct cv181x_camera_dev *csi)
 
 	addr = vb2_dma_contig_plane_dma_addr(&buf->vb.vb2_buf, 0);
 
+	cv181x_isp_reset(csi);
 	cv181x_vi_dma_configure(csi, addr);
 	cv181x_vi_start(csi);
 	cv181x_isp_start(csi);

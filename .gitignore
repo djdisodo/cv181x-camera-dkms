@@ -6,6 +6,7 @@
 *.symvers
 .*.cmd
 .tmp_versions/
+/source
 debian/.debhelper/
 debian/debhelper-build-stamp
 debian/files

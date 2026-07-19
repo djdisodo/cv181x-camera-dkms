@@ -18,6 +18,7 @@ void cv181x_vi_stop(struct cv181x_camera_dev *cam);
 bool cv181x_vi_irq_status(struct cv181x_camera_dev *cam);
 
 void cv181x_isp_start(struct cv181x_camera_dev *cam);
+void cv181x_isp_reset(struct cv181x_camera_dev *cam);
 void cv181x_isp_stop(struct cv181x_camera_dev *cam);
 void cv181x_isp_trigger(struct cv181x_camera_dev *cam);
 u32 cv181x_isp_irq_status(struct cv181x_camera_dev *cam);

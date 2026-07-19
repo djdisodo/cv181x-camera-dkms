@@ -1,3 +1,9 @@
+cv181x-camera-dkms (0.1.5) unstable; urgency=medium
+
+  * Reset ISP and CSI child blocks without resetting the shared video domain.
+
+ -- Sodo <sodo@example.com>  Sun, 19 Jul 2026 09:11:00 +0900
+
 cv181x-camera-dkms (0.1.4) unstable; urgency=medium
 
   * Program the next DMA address before returning a completed frame.
